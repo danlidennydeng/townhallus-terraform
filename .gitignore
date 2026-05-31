@@ -1,0 +1,21 @@
+# Dependency directories
+node_modules/
+
+# dotenv environment variable files
+.env
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+terrform.tfvars
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
