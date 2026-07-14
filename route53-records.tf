@@ -23,3 +23,15 @@ resource "aws_route53_record" "www" {
     evaluate_target_health = false
   }
 }
+
+#step 11
+resource "aws_route53_record" "api" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "api.townhallus.com"
+  type    = "CNAME"
+  ttl     = 300
+
+  records = [
+    aws_elastic_beanstalk_environment.api.cname
+  ]
+}
