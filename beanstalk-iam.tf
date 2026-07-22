@@ -64,13 +64,13 @@ resource "aws_iam_policy" "beanstalk_ssm_read" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ReadTownHallUSProductionParameters"
         Effect = "Allow"
         Action = [
           "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParametersByPath"
+
         ]
-        Resource = "arn:aws:ssm:us-east-1:*:parameter/townhallus/prod/*"
+        Resource = "${local.townhallus_prod_ssm_arn}/*"
       }
     ]
   })
@@ -79,4 +79,10 @@ resource "aws_iam_policy" "beanstalk_ssm_read" {
 resource "aws_iam_role_policy_attachment" "beanstalk_ssm_read" {
   role       = aws_iam_role.beanstalk_ec2_role.name
   policy_arn = aws_iam_policy.beanstalk_ssm_read.arn
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  townhallus_prod_ssm_arn = "arn:aws:ssm:us-east-1:${data.aws_caller_identity.current.account_id}:parameter/townhallus/prod"
 }

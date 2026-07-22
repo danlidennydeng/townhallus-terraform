@@ -1,7 +1,5 @@
 //step 6
 
-data "aws_caller_identity" "current" {}
-
 resource "aws_s3_bucket_policy" "frontend_www" {
   bucket = aws_s3_bucket.frontend_www.id
 

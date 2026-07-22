@@ -12,6 +12,14 @@ resource "aws_elastic_beanstalk_environment" "api" {
   solution_stack_name = "64bit Amazon Linux 2023 v6.11.2 running Node.js 22"
   tier                = "WebServer"
 
+  depends_on = [
+    aws_iam_role_policy_attachment.beanstalk_service,
+    aws_iam_role_policy_attachment.beanstalk_managed_updates,
+    aws_iam_role_policy_attachment.beanstalk_web_tier,
+    aws_iam_role_policy_attachment.beanstalk_cloudwatch_logs,
+    aws_iam_role_policy_attachment.beanstalk_ssm_read
+  ]
+
   # lifecycle {
   #   create_before_destroy = false
   # }
@@ -42,11 +50,12 @@ resource "aws_elastic_beanstalk_environment" "api" {
   }
 
   setting {
-    namespace = "aws:autoscaling:launchconfiguration"
-    name      = "InstanceType"
+    namespace = "aws:ec2:instances"
+    name      = "InstanceTypes"
     value     = "t3.micro"
   }
 
+# autoscaling
   setting {
     namespace = "aws:autoscaling:asg"
     name      = "MinSize"
@@ -57,6 +66,18 @@ resource "aws_elastic_beanstalk_environment" "api" {
     namespace = "aws:autoscaling:asg"
     name      = "MaxSize"
     value     = "4"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "Cooldown"
+    value     = "300"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "MonitoringInterval"
+    value     = "1 minute"
   }
 
   setting {
@@ -79,14 +100,26 @@ resource "aws_elastic_beanstalk_environment" "api" {
 
   setting {
     namespace = "aws:autoscaling:trigger"
-    name      = "UpperThreshold"
-    value     = "70"
+    name      = "Period"
+    value     = "1"
   }
 
   setting {
     namespace = "aws:autoscaling:trigger"
-    name      = "LowerThreshold"
-    value     = "30"
+    name      = "EvaluationPeriods"
+    value     = "3"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "BreachDuration"
+    value     = "3"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "UpperThreshold"
+    value     = "60"
   }
 
   setting {
@@ -97,10 +130,17 @@ resource "aws_elastic_beanstalk_environment" "api" {
 
   setting {
     namespace = "aws:autoscaling:trigger"
+    name      = "LowerThreshold"
+    value     = "25"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
     name      = "LowerBreachScaleIncrement"
     value     = "-1"
   }
 
+#mode
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "NODE_ENV"
@@ -118,6 +158,12 @@ resource "aws_elastic_beanstalk_environment" "api" {
     name      = "SecurityGroups"
     value     = aws_security_group.api_ec2.id
   }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "DisableDefaultEC2SecurityGroup"
+    value     = "true"
+  }  
 
   setting {
   namespace = "aws:ec2:vpc"
@@ -168,8 +214,62 @@ resource "aws_elastic_beanstalk_environment" "api" {
   }
 
   setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "ListenerEnabled"
+    value     = "true"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "Protocol"
+    value     = "HTTP"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "DefaultProcess"
+    value     = "default"
+  }
+
+  setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "HealthCheckPath"
-    value     = "/health"
+    value     = "/_elb_health"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "MatcherHTTPCode"
+    value     = "200"
+  }
+
+    setting {
+    namespace = "aws:elasticbeanstalk:application:environmentsecrets"
+    name      = "MONGO"
+    value     = "${local.townhallus_prod_ssm_arn}/MONGO"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environmentsecrets"
+    name      = "JWT_SECRET"
+    value     = "${local.townhallus_prod_ssm_arn}/JWT_SECRET"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environmentsecrets"
+    name      = "MAILTRAP_TOKEN"
+    value     = "${local.townhallus_prod_ssm_arn}/MAILTRAP_TOKEN"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environmentsecrets"
+    name      = "IPINFO_TOKEN"
+    value     = "${local.townhallus_prod_ssm_arn}/IPINFO_TOKEN"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environmentsecrets"
+    name      = "FRONTEND_URL"
+    value     = "${local.townhallus_prod_ssm_arn}/FRONTEND_URL"
   }
 }
